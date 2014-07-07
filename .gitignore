@@ -1,0 +1,4 @@
+# Folders
+.DS_Store
+node_modules
+public/js/vendor
