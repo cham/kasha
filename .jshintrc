@@ -26,5 +26,5 @@
     "quotmark": "single",
     "indent": 4,
 
-    "predef": [ ]
+    "predef": ['describe','it']
 }
