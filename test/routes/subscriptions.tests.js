@@ -6,56 +6,129 @@ var sinon = require('sinon'),
 
 describe('subscriptions routes', function(){
 
-    var cacheGetStub,
-        cacheItem;
+    var req,
+        res,
+        nextStub,
+        sendStub;
 
     beforeEach(function(){
-        cacheItem = {somedata:true};
-        cacheGetStub = sandbox.stub(cache, 'get').yields(cacheItem);
+        nextStub = sandbox.stub();
+        sendStub = sandbox.stub();
     });
 
     afterEach(function(){
         sandbox.restore();
     });
 
-    describe('get', function(){
-        var sendStub,
-            req,
-            res,
-            nextStub;
+    describe('get /:subscriptionId', function(){
+        var cacheGetStub,
+            cacheItem,
+            endStub,
+            statusStub;
 
         beforeEach(function(){
-            sendStub = sandbox.stub();
+            cacheItem = {somedata:true};
+            cacheGetStub = sandbox.stub(cache, 'get').yields(null, cacheItem);
+
+            endStub = sandbox.stub();
+            statusStub = sandbox.stub();
+
+            res = {
+                end: endStub,
+                send: sendStub,
+                status: statusStub
+            };
+        });
+
+        describe('if subscriptionId is not a number', function(){
+            beforeEach(function(){
+                endStub.reset();
+                sendStub.reset();
+                statusStub.reset();
+
+                req = {
+                    method: 'get',
+                    url: '/foobar123',
+                    param: function(){
+                        return 'foobar123';
+                    }
+                };
+
+                subscriptionsRoutes(req, res, nextStub);
+            });
+
+            it('it sets the response status to 400', function(){
+                expect(statusStub.calledOnce).toEqual(true);
+                expect(statusStub.args[0][0]).toEqual(400);
+            });
+        });
+
+        describe('if subscriptionId is a number', function(){
+            beforeEach(function(){
+                endStub.reset();
+                sendStub.reset();
+                statusStub.reset();
+
+                req = {
+                    method: 'get',
+                    url: '/12345',
+                    param: function(){
+                        return 12345;
+                    }
+                };
+
+                subscriptionsRoutes(req, res, nextStub);
+            });
+
+            it('calls cache.get, passing the subscriptionId and a callback', function(){
+                expect(cacheGetStub.calledOnce).toEqual(true);
+                expect(cacheGetStub.args[0][0]).toEqual(12345);
+                expect(typeof cacheGetStub.args[0][1] === 'function').toEqual(true);
+            });
+
+            it('if the callback returns a cache item, it sends the item via res', function(){
+                expect(sendStub.calledOnce).toEqual(true);
+                expect(sendStub.args[0][0]).toEqual(cacheItem);
+            });
+
+            it('if the callback returns nothing, it sets the response status to 404', function(){
+                cacheGetStub.reset();
+                statusStub.reset();
+                cacheGetStub.yields(null);
+                
+                subscriptionsRoutes(req, res, nextStub);
+
+                expect(statusStub.calledOnce).toEqual(true);
+                expect(statusStub.args[0][0]).toEqual(404);
+            });
+        });
+    });
+
+    describe('post /', function(){
+        var cacheSetStub;
+
+        beforeEach(function(){
+            cacheSetStub = sandbox.stub(cache, 'set').yields(null, 123);
 
             req = {
-                method: 'get',
+                method: 'post',
                 url: '/'
             };
+
             res = {
                 send: sendStub
             };
-            nextStub = sandbox.stub();
 
             subscriptionsRoutes(req, res, nextStub);
         });
 
-        it('calls cache.get, passing req res and a callback', function(){
-            expect(cacheGetStub.calledOnce).toEqual(true);
+        it('calls cache.set, passing the request body and a callback', function(){
+            expect(cacheSetStub.calledOnce).toEqual(true);
         });
 
-        it('if cache.get returns a cache item, it sends the cache item via res', function(){
+        it('sends the id of the new subscription', function(){
             expect(sendStub.calledOnce).toEqual(true);
-            expect(sendStub.args[0][0]).toEqual(cacheItem);
-        });
-
-        it('if cache.get returns nothing, it throws an error', function(){
-            cacheGetStub.restore();
-            cacheGetStub.yields(null);
-            subscriptionsRoutes(req, res, nextStub);
-
-            expect(nextStub.calledOnce).toEqual(true);
-            expect(nextStub.args[0][0] instanceof Error).toEqual(true);
-            expect(nextStub.args[0][0].message).toEqual('subscription not found');
+            expect(sendStub.args[0][0]).toEqual({subscriptionId: 123});
         });
     });
 
