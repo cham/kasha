@@ -1,7 +1,5 @@
-/*jshint node:true*/
 'use strict';
-var request = require('supertest'),
-    sinon = require('sinon'),
+var sinon = require('sinon'),
     sandbox = sinon.sandbox.create(),
     indexRoute = require('../../routes/index');
 
