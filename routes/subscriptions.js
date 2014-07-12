@@ -8,19 +8,8 @@ function invalidRequest(res){
     res.end();
 }
 
-function getSubscriptionId(req, res, next){
-    var subscriptionId = parseInt(req.param('subscriptionId'), 10);
-
-    if(Number.isNaN(subscriptionId)){
-        return invalidRequest(res);
-    }
-
-    req.param.subscriptionId = subscriptionId;
-    next();
-}
-
-router.get('/:subscriptionId', getSubscriptionId, function(req, res, next){
-    cache.get(req.param.subscriptionId, function(err, cacheItem){
+router.get('/:subscriptionHash', function(req, res, next){
+    cache.get(req.param('subscriptionHash'), function(err, cacheItem){
         if(err){
             return next(err);
         }

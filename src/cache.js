@@ -1,10 +1,19 @@
 'use strict';
 var client = require('redis').createClient(),
+    crypto = require('crypto'),
     key = 'ka$haitem:',
-    cacheTime = 1000 * 60 * 60;
+    cacheTime = 1000 * 60 * 60,
+    hashSalt = 'fo0b4r';
 
-function getSubscription(subscriptionId, cb){
-    client.get(key + subscriptionId, function(err, cacheItem){
+process.argv.forEach(function(val){
+    if(val.indexOf('cachesalt=') === -1){
+        return;
+    }
+    hashSalt = val.replace('cachesalt=', '');
+});
+
+function getSubscription(subscriptionHash, cb){
+    client.get(key + subscriptionHash, function(err, cacheItem){
         if(err){
             return cb(err);
         }
@@ -18,23 +27,20 @@ function getSubscription(subscriptionId, cb){
 }
 
 function setSubscription(cacheItem, cb){
-    var multi = client.multi();
+    var multi = client.multi(),
+        hasher = crypto.createHash('sha1'),
+        salt = Date.now() + hashSalt,
+        subscriptionHash = hasher.update(salt).digest('hex');
 
-    client.incr('nextSubscriptionId', function(err, subscriptionId){
+    multi.set(key + subscriptionHash, JSON.stringify(cacheItem), function(err){
         if(err){
             return cb(err);
         }
-
-        multi.set(key + subscriptionId, JSON.stringify(cacheItem), function(err){
-            if(err){
-                return cb(err);
-            }
-            cb(null, subscriptionId);
-        });
-
-        multi.pexpire(key + subscriptionId, cacheTime);
-        multi.exec();
+        cb(null, subscriptionHash);
     });
+
+    multi.pexpire(key + subscriptionHash, cacheTime);
+    multi.exec();
 }
 
 module.exports = {
