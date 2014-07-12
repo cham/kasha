@@ -9,11 +9,21 @@ describe('subscriptions routes', function(){
     var req,
         res,
         nextStub,
-        sendStub;
+        sendStub,
+        endStub,
+        statusStub;
 
     beforeEach(function(){
         nextStub = sandbox.stub();
         sendStub = sandbox.stub();
+        endStub = sandbox.stub();
+        statusStub = sandbox.stub();
+
+        res = {
+            end: endStub,
+            send: sendStub,
+            status: statusStub
+        };
     });
 
     afterEach(function(){
@@ -22,23 +32,11 @@ describe('subscriptions routes', function(){
 
     describe('get /:subscriptionId', function(){
         var cacheGetStub,
-            cacheItem,
-            endStub,
-            statusStub;
+            cacheItem;
 
         beforeEach(function(){
             cacheItem = {somedata:true};
             cacheGetStub = sandbox.stub(cache, 'get').yields(null, cacheItem);
-
-            endStub = sandbox.stub();
-            statusStub = sandbox.stub();
-            sendStub.reset();
-
-            res = {
-                end: endStub,
-                send: sendStub,
-                status: statusStub
-            };
             
             req = {
                 method: 'get',
@@ -80,25 +78,55 @@ describe('subscriptions routes', function(){
         beforeEach(function(){
             cacheSetStub = sandbox.stub(cache, 'set').yields(null, 123);
 
-            req = {
-                method: 'post',
-                url: '/'
-            };
-
-            res = {
-                send: sendStub
-            };
-
-            subscriptionsRoutes(req, res, nextStub);
+            res.send = sendStub;
         });
 
-        it('calls cache.set, passing the request body and a callback', function(){
-            expect(cacheSetStub.calledOnce).toEqual(true);
+        describe('when a url POST parameter is not supplied', function(){
+            beforeEach(function(){
+                req = {
+                    method: 'post',
+                    url: '/'
+                };
+
+                subscriptionsRoutes(req, res, nextStub);
+            });
+
+            it('sets the response status to 400', function(){
+                expect(statusStub.calledOnce).toEqual(true);
+                expect(statusStub.args[0][0]).toEqual(400);
+            });
+
+            it('passes the \'url required\' error message', function(){
+
+            });
+
+            it('ends the response', function(){
+
+            });
         });
 
-        it('sends the id of the new subscription', function(){
-            expect(sendStub.calledOnce).toEqual(true);
-            expect(sendStub.args[0][0]).toEqual({subscriptionId: 123});
+        describe('when a url POST parameter is supplied', function(){
+            beforeEach(function(){
+                req = {
+                    method: 'post',
+                    url: '/',
+                    body: {
+                        url: 'http://dan.nea.me:3100'
+                    },
+                    param: {}
+                };
+
+                subscriptionsRoutes(req, res, nextStub);
+            });
+
+            it('calls cache.set, passing the request body and a callback', function(){
+                expect(cacheSetStub.calledOnce).toEqual(true);
+            });
+
+            it('sends the id of the new subscription', function(){
+                expect(sendStub.calledOnce).toEqual(true);
+                expect(sendStub.args[0][0]).toEqual({subscriptionId: 123});
+            });
         });
     });
 
