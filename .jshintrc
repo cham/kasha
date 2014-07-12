@@ -26,5 +26,5 @@
     "quotmark": "single",
     "indent": 4,
 
-    "predef": ["describe","it","expect","beforeEach","afterEach"]
+    "predef": ["describe","it","expect","beforeEach","afterEach","console"]
 }
