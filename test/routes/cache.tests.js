@@ -10,7 +10,8 @@ describe('cache', function(){
         incrStub,
         setStub,
         expireStub,
-        callbackStub;
+        callbackStub,
+        digestStub;
 
     beforeEach(function(){
         getStub = sandbox.stub();
@@ -18,6 +19,7 @@ describe('cache', function(){
         setStub = sandbox.stub();
         expireStub = sandbox.stub();
         callbackStub = sandbox.stub();
+        digestStub = sandbox.stub().returns('this-is-a-hash-honest');
 
         multiStub = sandbox.stub().returns({
             set: setStub,
@@ -35,6 +37,13 @@ describe('cache', function(){
                             multi: multiStub
                         };
                     }
+                },
+                crypto: {
+                    createHash: sandbox.stub().returns({
+                        update: sandbox.stub().returns({
+                            digest: digestStub
+                        })
+                    })
                 }
             }
         });
@@ -73,38 +82,31 @@ describe('cache', function(){
             cache.set({someData:true}, callbackStub);
         });
 
-        it('retrieves a new subscription id for the nextSubscriptionId key', function(){
-            expect(incrStub.calledOnce).toEqual(true);
-            expect(incrStub.args[0][0]).toEqual('nextSubscriptionId');
+        it('creates a new subscription hash', function(){
+            expect(digestStub.calledOnce).toEqual(true);
         });
 
-        describe('when a new subscription id is found', function(){
+        it('sets a stringified representation of the JSON in redis, using the hash as an identifier', function(){
+            expect(setStub.calledOnce).toEqual(true);
+            expect(setStub.args[0][0]).toEqual('ka$haitem:this-is-a-hash-honest');
+            expect(setStub.args[0][1]).toEqual('{"someData":true}');
+        });
+
+        it('sets an expiry time for the cache item of 1 hour', function(){
+            expect(expireStub.calledOnce).toEqual(true);
+            expect(expireStub.args[0][0]).toEqual('ka$haitem:this-is-a-hash-honest');
+            expect(expireStub.args[0][1]).toEqual(3600000);
+        });
+
+        describe('when redis.set resolves', function(){
             beforeEach(function(){
-                incrStub.args[0][1](null, 321);
+                setStub.args[0][2]();
             });
 
-            it('sets a stringified representation of the JSON in redis, using the new subscription id', function(){
-                expect(setStub.calledOnce).toEqual(true);
-                expect(setStub.args[0][0]).toEqual('ka$haitem:321');
-                expect(setStub.args[0][1]).toEqual('{"someData":true}');
-            });
-
-            it('sets an expiry time for the cache item of 1 hour', function(){
-                expect(expireStub.calledOnce).toEqual(true);
-                expect(expireStub.args[0][0]).toEqual('ka$haitem:321');
-                expect(expireStub.args[0][1]).toEqual(3600000);
-            });
-
-            describe('when redis.set resolves', function(){
-                beforeEach(function(){
-                    setStub.args[0][2]();
-                });
-
-                it('passes the new subscription id to the callback', function(){
-                    expect(callbackStub.calledOnce).toEqual(true);
-                    expect(callbackStub.args[0][0]).toEqual(null);
-                    expect(callbackStub.args[0][1]).toEqual(321);
-                });
+            it('passes the subscription hash to the callback', function(){
+                expect(callbackStub.calledOnce).toEqual(true);
+                expect(callbackStub.args[0][0]).toEqual(null);
+                expect(callbackStub.args[0][1]).toEqual('this-is-a-hash-honest');
             });
         });
     });

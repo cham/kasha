@@ -1,2 +1,2 @@
 #!/bin/bash
-npm start
+node bin/www cachesalt=5uP3rs3Cr3t?B33d0gt!me
