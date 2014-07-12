@@ -3,11 +3,6 @@ var express = require('express');
 var router = express.Router();
 var cache = require('../src/cache');
 
-function invalidRequest(res){
-    res.status(400);
-    res.end();
-}
-
 router.get('/:subscriptionHash', function(req, res, next){
     cache.get(req.param('subscriptionHash'), function(err, cacheItem){
         if(err){
