@@ -1,19 +1,10 @@
 'use strict';
 var client = require('redis').createClient(),
-    crypto = require('crypto'),
     key = 'ka$haitem:',
-    cacheTime = 1000 * 60 * 60,
-    hashSalt = 'fo0b4r';
+    cacheTime = 1000 * 10;
 
-process.argv.forEach(function(val){
-    if(val.indexOf('cachesalt=') === -1){
-        return;
-    }
-    hashSalt = val.replace('cachesalt=', '');
-});
-
-function getSubscription(subscriptionHash, cb){
-    client.get(key + subscriptionHash, function(err, cacheItem){
+function getSubscription(hash, cb){
+    client.get(key + hash, function(err, cacheItem){
         if(err){
             return cb(err);
         }
@@ -26,20 +17,18 @@ function getSubscription(subscriptionHash, cb){
     });
 }
 
-function setSubscription(cacheItem, cb){
+function setSubscription(hash, cacheItem, cb){
     var multi = client.multi(),
-        hasher = crypto.createHash('sha1'),
-        salt = Date.now() + hashSalt,
-        subscriptionHash = hasher.update(salt).digest('hex');
+        body = cacheItem ? JSON.stringify(cacheItem) : '';
 
-    multi.set(key + subscriptionHash, JSON.stringify(cacheItem), function(err){
+    multi.set(key + hash, body, function(err){
         if(err){
             return cb(err);
         }
-        cb(null, subscriptionHash);
+        cb();
     });
 
-    multi.pexpire(key + subscriptionHash, cacheTime);
+    multi.pexpire(key + hash, cacheTime);
     multi.exec();
 }
 
