@@ -1,7 +1,16 @@
 'use strict';
 var client = require('redis').createClient(),
-    key = 'ka$haitem:',
-    cacheTime = 1000 * 10;
+    key = 'kashaitem:',
+    cacheTime = 1000 * 60 * 60;
+
+function getEntries(cb){
+    client.hgetall('kashaentries', function(err, entries){
+        if(err){
+            return cb(err);
+        }
+        cb(null, entries);
+    });
+}
 
 function getSubscription(hash, cb){
     client.get(key + hash, function(err, cacheItem){
@@ -17,15 +26,24 @@ function getSubscription(hash, cb){
     });
 }
 
-function setSubscription(hash, cacheItem, cb){
+function setSubscription(hash, url, cacheItem, cb){
     var multi = client.multi(),
         body = cacheItem ? JSON.stringify(cacheItem) : '';
+
+    if(!cb){
+        cb = function(){};
+    }
 
     multi.set(key + hash, body, function(err){
         if(err){
             return cb(err);
         }
         cb();
+    });
+    multi.hset('kashaentries', hash, url, function(err){
+        if(err){
+            console.log(err);
+        }
     });
 
     multi.pexpire(key + hash, cacheTime);
@@ -34,5 +52,6 @@ function setSubscription(hash, cacheItem, cb){
 
 module.exports = {
     get: getSubscription,
-    set: setSubscription
+    set: setSubscription,
+    entries: getEntries
 };

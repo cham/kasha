@@ -14,7 +14,7 @@ process.argv.forEach(function(val){
     hashSalt = val.replace('cachesalt=', '');
 });
 
-function setCacheItem(url, hash, cb){
+function setCacheItem(hash, url, cb){
     var options = {
             uri: url,
             method: 'get'
@@ -28,7 +28,7 @@ function setCacheItem(url, hash, cb){
         if(error){
             return console.log(error);
         }
-        cache.set(hash, data, function(err){
+        cache.set(hash, url, data, function(err){
             if(err){
                 console.log(err);
             }
@@ -42,7 +42,7 @@ function addSubscription(url, cb){
         salt = Date.now() + hashSalt,
         hash = hasher.update(salt).digest('hex');
 
-    setCacheItem(url, hash, function(err){
+    setCacheItem(hash, url, function(err){
         if(err){
             console.log(err);
         }
