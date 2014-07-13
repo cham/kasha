@@ -9,6 +9,7 @@ describe('cache', function(){
         multiStub,
         incrStub,
         setStub,
+        hsetStub,
         expireStub,
         callbackStub;
 
@@ -16,11 +17,13 @@ describe('cache', function(){
         getStub = sandbox.stub();
         incrStub = sandbox.stub();
         setStub = sandbox.stub();
+        hsetStub = sandbox.stub();
         expireStub = sandbox.stub();
         callbackStub = sandbox.stub();
 
         multiStub = sandbox.stub().returns({
             set: setStub,
+            hset: hsetStub,
             pexpire: expireStub,
             exec: sandbox.stub()
         });
@@ -47,7 +50,7 @@ describe('cache', function(){
 
         it('calls redis client get, passing the unique key for the subscription and a callback', function(){
             expect(getStub.calledOnce).toEqual(true);
-            expect(getStub.args[0][0]).toEqual('ka$haitem:123');
+            expect(getStub.args[0][0]).toEqual('kashaitem:123');
             expect(typeof getStub.args[0][1] === 'function').toEqual(true);
         });
 
@@ -70,18 +73,18 @@ describe('cache', function(){
 
     describe('set', function(){
         beforeEach(function(){
-            cache.set('this-is-a-hash-honest', {someData:true}, callbackStub);
+            cache.set('this-is-a-hash-honest', 'http://dan.nea.me', {someData:true}, callbackStub);
         });
 
         it('sets a stringified representation of the JSON in redis, using the given hash as an identifier', function(){
             expect(setStub.calledOnce).toEqual(true);
-            expect(setStub.args[0][0]).toEqual('ka$haitem:this-is-a-hash-honest');
+            expect(setStub.args[0][0]).toEqual('kashaitem:this-is-a-hash-honest');
             expect(setStub.args[0][1]).toEqual('{"someData":true}');
         });
 
         it('sets an expiry time for the cache item', function(){
             expect(expireStub.calledOnce).toEqual(true);
-            expect(expireStub.args[0][0]).toEqual('ka$haitem:this-is-a-hash-honest');
+            expect(expireStub.args[0][0]).toEqual('kashaitem:this-is-a-hash-honest');
             expect(isNaN(parseInt(expireStub.args[0][1], 10))).toEqual(false);
         });
 

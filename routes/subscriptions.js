@@ -35,7 +35,7 @@ router.get('/:hash', function(req, res, next){
 
 router.post('/', getUrlParam, function(req, res, next){
     queue.add(req.param.url, function(hash){
-        cache.set(hash, null, function(err){
+        cache.set(hash, req.param.url, null, function(err){
             if(err){
                 return next(err);
             }
