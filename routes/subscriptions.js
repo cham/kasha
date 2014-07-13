@@ -1,7 +1,8 @@
 'use strict';
-var express = require('express');
-var router = express.Router();
-var cache = require('../src/cache');
+var express = require('express'),
+    router = express.Router(),
+    cache = require('../src/cache'),
+    queue = require('../src/subscriptionqueue');
 
 function endWithBadRequest(res, msg){
     res.status(400);
@@ -19,8 +20,8 @@ function getUrlParam(req, res, next){
     next();
 }
 
-router.get('/:subscriptionHash', function(req, res, next){
-    cache.get(req.param('subscriptionHash'), function(err, cacheItem){
+router.get('/:hash', function(req, res, next){
+    cache.get(req.param('hash'), function(err, cacheItem){
         if(err){
             return next(err);
         }
@@ -33,12 +34,15 @@ router.get('/:subscriptionHash', function(req, res, next){
 });
 
 router.post('/', getUrlParam, function(req, res, next){
-    cache.set(req.body, function(err, subscriptionId){
-        if(err){
-            return next(err);
-        }
-        res.send({
-            subscriptionId: subscriptionId
+    queue.add(req.param.url, function(hash){
+        cache.set(hash, null, function(err){
+            if(err){
+                return next(err);
+            }
+
+            res.send({
+                subscriptionId: hash
+            });
         });
     });
 });

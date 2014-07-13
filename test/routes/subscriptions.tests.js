@@ -97,11 +97,12 @@ describe('subscriptions routes', function(){
             });
 
             it('passes the \'url required\' error message', function(){
-
+                expect(sendStub.calledOnce).toEqual(true);
+                expect(sendStub.args[0][0]).toEqual({message: '\'url\' parameter is required'});
             });
 
             it('ends the response', function(){
-
+                expect(endStub.calledOnce).toEqual(true);
             });
         });
 
@@ -125,9 +126,8 @@ describe('subscriptions routes', function(){
 
             it('sends the id of the new subscription', function(){
                 expect(sendStub.calledOnce).toEqual(true);
-                expect(sendStub.args[0][0]).toEqual({subscriptionId: 123});
+                expect(sendStub.args[0][0].subscriptionId).toBeDefined();
             });
         });
     });
-
 });

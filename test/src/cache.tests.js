@@ -10,8 +10,7 @@ describe('cache', function(){
         incrStub,
         setStub,
         expireStub,
-        callbackStub,
-        digestStub;
+        callbackStub;
 
     beforeEach(function(){
         getStub = sandbox.stub();
@@ -19,7 +18,6 @@ describe('cache', function(){
         setStub = sandbox.stub();
         expireStub = sandbox.stub();
         callbackStub = sandbox.stub();
-        digestStub = sandbox.stub().returns('this-is-a-hash-honest');
 
         multiStub = sandbox.stub().returns({
             set: setStub,
@@ -37,13 +35,6 @@ describe('cache', function(){
                             multi: multiStub
                         };
                     }
-                },
-                crypto: {
-                    createHash: sandbox.stub().returns({
-                        update: sandbox.stub().returns({
-                            digest: digestStub
-                        })
-                    })
                 }
             }
         });
@@ -79,23 +70,19 @@ describe('cache', function(){
 
     describe('set', function(){
         beforeEach(function(){
-            cache.set({someData:true}, callbackStub);
+            cache.set('this-is-a-hash-honest', {someData:true}, callbackStub);
         });
 
-        it('creates a new subscription hash', function(){
-            expect(digestStub.calledOnce).toEqual(true);
-        });
-
-        it('sets a stringified representation of the JSON in redis, using the hash as an identifier', function(){
+        it('sets a stringified representation of the JSON in redis, using the given hash as an identifier', function(){
             expect(setStub.calledOnce).toEqual(true);
             expect(setStub.args[0][0]).toEqual('ka$haitem:this-is-a-hash-honest');
             expect(setStub.args[0][1]).toEqual('{"someData":true}');
         });
 
-        it('sets an expiry time for the cache item of 1 hour', function(){
+        it('sets an expiry time for the cache item', function(){
             expect(expireStub.calledOnce).toEqual(true);
             expect(expireStub.args[0][0]).toEqual('ka$haitem:this-is-a-hash-honest');
-            expect(expireStub.args[0][1]).toEqual(3600000);
+            expect(isNaN(parseInt(expireStub.args[0][1], 10))).toEqual(false);
         });
 
         describe('when redis.set resolves', function(){
@@ -103,12 +90,9 @@ describe('cache', function(){
                 setStub.args[0][2]();
             });
 
-            it('passes the subscription hash to the callback', function(){
+            it('executes the callback', function(){
                 expect(callbackStub.calledOnce).toEqual(true);
-                expect(callbackStub.args[0][0]).toEqual(null);
-                expect(callbackStub.args[0][1]).toEqual('this-is-a-hash-honest');
             });
         });
     });
-
 });

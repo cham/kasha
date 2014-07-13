@@ -1,2 +1,4 @@
 #!/bin/bash
-node bin/www cachesalt=5uP3rs3Cr3t?B33d0gt!me
+node app.js cachesalt=5uP3rs3Cr3t?B33d0gt!me
+exit 0
+
