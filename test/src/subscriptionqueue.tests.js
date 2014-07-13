@@ -72,4 +72,27 @@ describe('subscriptionqueue', function(){
             });
         });
     });
+
+    describe('refresh', function(){
+        var callbackStub;
+
+        beforeEach(function(){
+            callbackStub = sandbox.stub();
+            queue.refresh('http://beedogs.com', 'a-hash', callbackStub);
+        });
+
+        it('requests the given url as GET', function(){
+            expect(requestStub.calledOnce).toEqual(true);
+        });
+
+        describe('when the request resolves', function(){
+            beforeEach(function(){
+                requestStub.yield(null, null, {somedata: true});
+            });
+
+            it('passes the hash and response data to cache.set', function(){
+                expect(cacheStub.calledOnce).toEqual(true);
+            });
+        });
+    });
 });
