@@ -2,9 +2,6 @@
   "name": "kasha",
   "version": "0.0.1",
   "private": true,
-  "scripts": {
-    "start": "node ./bin/www"
-  },
   "dependencies": {
     "body-parser": "^1.0.2",
     "crypto": "0.0.3",
